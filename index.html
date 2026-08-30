@@ -1,0 +1,1411 @@
+<!DOCTYPE html>
+<html lang="es" class="dark">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SecuenciaDocente - Suite Pedagógica de Plano Secuencia & IA</title>
+    <!-- Tailwind CSS CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            darkMode: 'class',
+            theme: {
+                extend: {
+                    colors: {
+                        brand: {
+                            50: '#f0fdfa',
+                            500: '#14b8a6',
+                            600: '#0d9488',
+                            700: '#0f766e',
+                            900: '#134e4a',
+                        },
+                        cinema: {
+                            gold: '#f59e0b',
+                            neon: '#06b6d4',
+                            crimson: '#ef4444',
+                            amber: '#d97706'
+                        }
+                    },
+                    fontFamily: {
+                        sans: ['Inter', 'system-ui', '-apple-system', 'sans-serif']
+                    }
+                }
+            }
+        }
+    </script>
+    <!-- Lucide Icons -->
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <!-- Three.js CDN for 3D Camera Simulation -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+    <style>
+        ::-webkit-scrollbar {
+            width: 8px;
+            height: 8px;
+        }
+        ::-webkit-scrollbar-track {
+            background: #0f172a;
+        }
+        ::-webkit-scrollbar-thumb {
+            background: #334155;
+            border-radius: 4px;
+        }
+        ::-webkit-scrollbar-thumb:hover {
+            background: #475569;
+        }
+        .glass-panel {
+            background: rgba(15, 23, 42, 0.75);
+            backdrop-filter: blur(12px);
+            border: 1px solid rgba(51, 65, 85, 0.5);
+        }
+        .camera-grid {
+            background-size: 20px 20px;
+            background-image: 
+                linear-gradient(to right, rgba(255, 255, 255, 0.05) 1px, transparent 1px),
+                linear-gradient(to bottom, rgba(255, 255, 255, 0.05) 1px, transparent 1px);
+        }
+    </style>
+</head>
+<body class="bg-slate-950 text-slate-100 min-h-screen flex flex-col font-sans antialiased selection:bg-teal-500 selection:text-white">
+
+    <header class="border-b border-slate-800 bg-slate-900/90 backdrop-blur-md sticky top-0 z-50">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between">
+            <div class="flex items-center space-x-3">
+                <div class="w-10 h-10 rounded-xl bg-gradient-to-tr from-teal-600 to-cyan-400 flex items-center justify-center shadow-lg shadow-teal-500/20">
+                    <i data-lucide="video" class="w-5 h-5 text-white"></i>
+                </div>
+                <div>
+                    <h1 class="text-lg font-bold bg-gradient-to-r from-teal-300 via-cyan-200 to-white bg-clip-text text-transparent">
+                        SecuenciaDocente <span class="text-xs px-2 py-0.5 ml-1.5 rounded-full bg-teal-950 border border-teal-800 text-teal-300 font-medium">Ciclo 4 Semanas</span>
+                    </h1>
+                    <p class="text-xs text-slate-400 hidden sm:block">Plataforma pedagógica de Plano Secuencia & Generación de Video con IA</p>
+                </div>
+            </div>
+
+            <!-- Navigation Tabs -->
+            <nav class="flex items-center gap-1 sm:gap-2">
+                <button onclick="switchTab('analisis')" id="tab-btn-analisis" class="tab-btn px-3 py-2 rounded-lg text-sm font-medium transition-all flex items-center gap-2 bg-teal-600/20 text-teal-300 border border-teal-500/40">
+                    <i data-lucide="book-open" class="w-4 h-4"></i>
+                    <span class="hidden md:inline">Material de Análisis</span>
+                </button>
+                <button onclick="switchTab('simulador')" id="tab-btn-simulador" class="tab-btn px-3 py-2 rounded-lg text-sm font-medium transition-all flex items-center gap-2 text-slate-400 hover:text-slate-200 hover:bg-slate-800/60">
+                    <i data-lucide="box" class="w-4 h-4"></i>
+                    <span class="hidden md:inline">Simulador 3D</span>
+                </button>
+                <button onclick="switchTab('prompts')" id="tab-btn-prompts" class="tab-btn px-3 py-2 rounded-lg text-sm font-medium transition-all flex items-center gap-2 text-slate-400 hover:text-slate-200 hover:bg-slate-800/60">
+                    <i data-lucide="sparkles" class="w-4 h-4"></i>
+                    <span class="hidden md:inline">Prompt Studio</span>
+                </button>
+                <button onclick="switchTab('rubrica')" id="tab-btn-rubrica" class="tab-btn px-3 py-2 rounded-lg text-sm font-medium transition-all flex items-center gap-2 text-slate-400 hover:text-slate-200 hover:bg-slate-800/60">
+                    <i data-lucide="check-square" class="w-4 h-4"></i>
+                    <span class="hidden md:inline">Rúbrica & Calificador</span>
+                </button>
+            </nav>
+        </div>
+    </header>
+
+    <main class="flex-1 max-w-7xl w-full mx-auto p-4 sm:p-6 lg:p-8 space-y-6">
+
+        <!-- Custom Notification Toast -->
+        <div id="toast" class="fixed bottom-6 right-6 z-50 transform translate-y-20 opacity-0 transition-all duration-300 pointer-events-none flex items-center gap-3 px-4 py-3 rounded-xl bg-slate-900 border border-teal-500/50 shadow-2xl text-slate-100">
+            <i data-lucide="check-circle-2" class="w-5 h-5 text-teal-400"></i>
+            <span id="toast-message" class="text-sm font-medium">Acción completada con éxito</span>
+        </div>
+
+        <!-- ========================================================================= -->
+        <!-- TAB 1: MATERIALES DE ANÁLISIS POR SEMANA -->
+        <!-- ========================================================================= -->
+        <section id="tab-analisis" class="tab-content space-y-6">
+            <div class="flex flex-col md:flex-row md:items-center justify-between gap-4 glass-panel p-6 rounded-2xl border-slate-800">
+                <div>
+                    <h2 class="text-2xl font-bold text-white flex items-center gap-2">
+                        <i data-lucide="film" class="text-teal-400 w-6 h-6"></i>
+                        Guías Didácticas y Material de Análisis
+                    </h2>
+                    <p class="text-sm text-slate-400 mt-1">Estructura semanal con analogías sencillas, focos de observación y preguntas socráticas para el aula.</p>
+                </div>
+                <div class="flex items-center gap-2">
+                    <span class="text-xs text-slate-400 uppercase tracking-wider font-semibold">Seleccionar Semana:</span>
+                    <div class="flex rounded-lg bg-slate-950 p-1 border border-slate-800" id="week-selector">
+                        <button onclick="setAnalysisWeek(1)" class="week-pill px-3 py-1.5 rounded-md text-xs font-semibold bg-teal-600 text-white transition">Sem 1</button>
+                        <button onclick="setAnalysisWeek(2)" class="week-pill px-3 py-1.5 rounded-md text-xs font-semibold text-slate-400 hover:text-white transition">Sem 2</button>
+                        <button onclick="setAnalysisWeek(3)" class="week-pill px-3 py-1.5 rounded-md text-xs font-semibold text-slate-400 hover:text-white transition">Sem 3</button>
+                        <button onclick="setAnalysisWeek(4)" class="week-pill px-3 py-1.5 rounded-md text-xs font-semibold text-slate-400 hover:text-white transition">Sem 4</button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Dynamic Weekly Guide Content -->
+            <div id="week-content-card" class="glass-panel p-6 md:p-8 rounded-2xl border-slate-800 space-y-6">
+                <!-- Content injected via JavaScript -->
+            </div>
+
+            <!-- Comparative Overview Cards -->
+            <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+                <div onclick="setAnalysisWeek(1)" class="cursor-pointer glass-panel p-4 rounded-xl border-slate-800 hover:border-teal-500/50 transition group">
+                    <div class="text-xs font-bold text-teal-400 tracking-wider">SEMANA 1</div>
+                    <div class="font-bold text-white mt-1 group-hover:text-teal-300 transition">Coreografía Técnica</div>
+                    <div class="text-xs text-slate-400 mt-1">Steadicam + Cafetería 50s</div>
+                    <div class="mt-3 flex items-center justify-between text-xs text-slate-500">
+                        <span>8 segundos</span>
+                        <i data-lucide="chevron-right" class="w-4 h-4 text-slate-400 group-hover:translate-x-1 transition"></i>
+                    </div>
+                </div>
+
+                <div onclick="setAnalysisWeek(2)" class="cursor-pointer glass-panel p-4 rounded-xl border-slate-800 hover:border-cyan-500/50 transition group">
+                    <div class="text-xs font-bold text-cyan-400 tracking-wider">SEMANA 2</div>
+                    <div class="font-bold text-white mt-1 group-hover:text-cyan-300 transition">Inmersión Espacial</div>
+                    <div class="text-xs text-slate-400 mt-1">24mm + Mercado Neón</div>
+                    <div class="mt-3 flex items-center justify-between text-xs text-slate-500">
+                        <span>10 segundos</span>
+                        <i data-lucide="chevron-right" class="w-4 h-4 text-slate-400 group-hover:translate-x-1 transition"></i>
+                    </div>
+                </div>
+
+                <div onclick="setAnalysisWeek(3)" class="cursor-pointer glass-panel p-4 rounded-xl border-slate-800 hover:border-amber-500/50 transition group">
+                    <div class="text-xs font-bold text-amber-400 tracking-wider">SEMANA 3</div>
+                    <div class="font-bold text-white mt-1 group-hover:text-amber-300 transition">Tensión Temporal</div>
+                    <div class="text-xs text-slate-400 mt-1">Slow Push-In + Pasillo Hotel</div>
+                    <div class="mt-3 flex items-center justify-between text-xs text-slate-500">
+                        <span>10 segundos</span>
+                        <i data-lucide="chevron-right" class="w-4 h-4 text-slate-400 group-hover:translate-x-1 transition"></i>
+                    </div>
+                </div>
+
+                <div onclick="setAnalysisWeek(4)" class="cursor-pointer glass-panel p-4 rounded-xl border-slate-800 hover:border-purple-500/50 transition group">
+                    <div class="text-xs font-bold text-purple-400 tracking-wider">SEMANA 4</div>
+                    <div class="font-bold text-white mt-1 group-hover:text-purple-300 transition">Escala & Revelación</div>
+                    <div class="text-xs text-slate-400 mt-1">Grúa Ascendente + Acantilado</div>
+                    <div class="mt-3 flex items-center justify-between text-xs text-slate-500">
+                        <span>10 segundos</span>
+                        <i data-lucide="chevron-right" class="w-4 h-4 text-slate-400 group-hover:translate-x-1 transition"></i>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- ========================================================================= -->
+        <!-- TAB 2: SIMULADOR 3D DE MOVIMIENTO DE CÁMARA -->
+        <!-- ========================================================================= -->
+        <section id="tab-simulador" class="tab-content hidden space-y-6">
+            <div class="glass-panel p-6 rounded-2xl border-slate-800 flex flex-col md:flex-row md:items-center justify-between gap-4">
+                <div>
+                    <h2 class="text-2xl font-bold text-white flex items-center gap-2">
+                        <i data-lucide="compass" class="text-cyan-400 w-6 h-6"></i>
+                        Simulador de Trayectoria de Cámara 3D
+                    </h2>
+                    <p class="text-sm text-slate-400 mt-1">Visualice la cinemática de la cámara, los obstáculos y el campo de visión (FOV) sin cortes de montaje.</p>
+                </div>
+                <div class="flex items-center gap-2">
+                    <select id="sim-scene-select" onchange="changeSimScene(this.value)" class="bg-slate-900 text-sm text-slate-200 border border-slate-700 rounded-lg px-3 py-2 outline-none focus:border-teal-500">
+                        <option value="1">Escena 1: Steadicam & Actor (Cafetería)</option>
+                        <option value="2">Escena 2: Tracking Inmersivo (Mercado)</option>
+                        <option value="3">Escena 3: Slow Dolly In (Pasillo)</option>
+                        <option value="4">Escena 4: Grúa Ascendente (Acantilado)</option>
+                    </select>
+                </div>
+            </div>
+
+            <!-- Viewport & Controls Grid -->
+            <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+                <!-- 3D Canvas Viewport -->
+                <div class="lg:col-span-2 glass-panel rounded-2xl border-slate-800 overflow-hidden relative min-h-[420px] flex flex-col">
+                    <div class="absolute top-4 left-4 z-10 bg-slate-950/80 backdrop-blur px-3 py-1.5 rounded-lg border border-slate-800 text-xs font-mono flex items-center gap-2 text-cyan-300">
+                        <span class="w-2 h-2 rounded-full bg-red-500 animate-pulse"></span>
+                        <span id="sim-status-label">REC • TIME: 00:00:00 • 24 FPS</span>
+                    </div>
+
+                    <div class="absolute top-4 right-4 z-10 flex gap-2">
+                        <button onclick="toggleCameraPerspective()" id="btn-camera-pov" class="bg-slate-950/80 backdrop-blur hover:bg-slate-800 px-3 py-1.5 rounded-lg border border-slate-800 text-xs font-medium text-slate-300 transition flex items-center gap-1.5">
+                            <i data-lucide="eye" class="w-3.5 h-3.5"></i>
+                            <span id="cam-mode-text">Cambiar a POV Cámara</span>
+                        </button>
+                    </div>
+
+                    <!-- WebGL Canvas Container -->
+                    <div id="canvas-container" class="w-full flex-1 min-h-[380px] bg-slate-950 relative"></div>
+
+                    <!-- Bottom Simulator Timeline Bar -->
+                    <div class="p-4 bg-slate-950/90 border-t border-slate-800 flex items-center justify-between gap-4">
+                        <div class="flex items-center gap-2">
+                            <button onclick="toggleSimPlay()" id="sim-play-btn" class="w-9 h-9 rounded-lg bg-teal-600 hover:bg-teal-500 text-white flex items-center justify-center transition">
+                                <i data-lucide="play" class="w-4 h-4" id="sim-play-icon"></i>
+                            </button>
+                            <button onclick="resetSim()" class="w-9 h-9 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-300 flex items-center justify-center transition" title="Reiniciar toma">
+                                <i data-lucide="rotate-ccw" class="w-4 h-4"></i>
+                            </button>
+                        </div>
+
+                        <div class="flex-1 flex items-center gap-3">
+                            <span class="text-xs font-mono text-slate-400" id="sim-time-display">0.0s</span>
+                            <input type="range" id="sim-progress" min="0" max="100" value="0" step="0.5" class="w-full accent-teal-500 bg-slate-800 rounded-lg cursor-pointer h-1.5" oninput="scrubSim(this.value)">
+                            <span class="text-xs font-mono text-slate-400" id="sim-duration-display">10.0s</span>
+                        </div>
+
+                        <div class="text-xs text-slate-400 hidden sm:block font-mono">
+                            VEL: <span id="sim-speed-val" class="text-teal-400">1.0x</span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Simulation Pedagogical Inspector -->
+                <div class="glass-panel p-6 rounded-2xl border-slate-800 space-y-4 flex flex-col justify-between">
+                    <div>
+                        <h3 class="text-sm font-bold uppercase tracking-wider text-teal-400 flex items-center gap-2">
+                            <i data-lucide="sliders" class="w-4 h-4"></i>
+                            Parámetros de la Escena
+                        </h3>
+                        <div class="mt-4 space-y-3" id="sim-inspector-details">
+                            <!-- Populated dynamically based on active scene -->
+                        </div>
+                    </div>
+
+                    <div class="p-4 rounded-xl bg-teal-950/40 border border-teal-800/60 text-xs text-teal-200 leading-relaxed">
+                        <strong class="block text-teal-300 font-semibold mb-1 flex items-center gap-1.5">
+                            <i data-lucide="lightbulb" class="w-4 h-4"></i>
+                            Nota para la clase:
+                        </strong>
+                        <span id="sim-pedagogical-tip">Observe cómo el operador de cámara mantiene una distancia focal constante respecto al actor mientras ambos realizan una trayectoria coordinada entre las mesas.</span>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- ========================================================================= -->
+        <!-- TAB 3: PROMPT STUDIO & GENERADOR DE IA -->
+        <!-- ========================================================================= -->
+        <section id="tab-prompts" class="tab-content hidden space-y-6">
+            <div class="glass-panel p-6 rounded-2xl border-slate-800 flex flex-col md:flex-row md:items-center justify-between gap-4">
+                <div>
+                    <h2 class="text-2xl font-bold text-white flex items-center gap-2">
+                        <i data-lucide="wand-2" class="text-amber-400 w-6 h-6"></i>
+                        Laboratorio de Prompts de Video con IA
+                    </h2>
+                    <p class="text-sm text-slate-400 mt-1">Ajuste sintáctico para Runway Gen-3, Kling AI 1.5, Luma Dream Machine y Sora con detección de errores de corte.</p>
+                </div>
+                <div class="flex items-center gap-2">
+                    <label class="text-xs text-slate-400 font-medium">Motor de IA:</label>
+                    <select id="engine-select" onchange="updateEnginePreset()" class="bg-slate-900 text-sm text-slate-200 border border-slate-700 rounded-lg px-3 py-2 outline-none focus:border-amber-500 font-medium">
+                        <option value="runway">Runway Gen-3 Alpha (Camera Control)</option>
+                        <option value="kling">Kling AI 1.5 (Strict Continuity)</option>
+                        <option value="luma">Luma Dream Machine (Camera Motion)</option>
+                        <option value="sora">OpenAI Sora / Generic Cinema</option>
+                    </select>
+                </div>
+            </div>
+
+            <div class="grid grid-cols-1 lg:grid-cols-12 gap-6">
+                <!-- Prompt Builder Form (7 Cols) -->
+                <div class="lg:col-span-7 glass-panel p-6 rounded-2xl border-slate-800 space-y-4">
+                    <div class="flex items-center justify-between border-b border-slate-800 pb-3">
+                        <h3 class="text-sm font-bold uppercase tracking-wider text-slate-200 flex items-center gap-2">
+                            <i data-lucide="layout-template" class="w-4 h-4 text-teal-400"></i>
+                            Constructor por Bloques Cinematográficos
+                        </h3>
+                        <button onclick="loadSceneTemplate()" class="text-xs text-teal-400 hover:text-teal-300 font-medium flex items-center gap-1">
+                            <i data-lucide="refresh-cw" class="w-3 h-3"></i> Cargar Escena de la Semana
+                        </button>
+                    </div>
+
+                    <!-- Builder Fields -->
+                    <div class="space-y-3">
+                        <div>
+                            <label class="block text-xs font-semibold text-slate-400 uppercase tracking-wider mb-1">1. Movimiento de Cámara & Tipo de Toma</label>
+                            <input type="text" id="p-camera" value="Continuous sequence shot, smooth Steadicam tracking shot panning left" class="w-full bg-slate-900 border border-slate-700 rounded-lg px-3 py-2 text-sm text-slate-200 focus:border-teal-500 outline-none" oninput="compilePrompt()">
+                        </div>
+
+                        <div>
+                            <label class="block text-xs font-semibold text-slate-400 uppercase tracking-wider mb-1">2. Sujeto y Acción Cronológica en Tiempo Real</label>
+                            <textarea id="p-subject" rows="2" class="w-full bg-slate-900 border border-slate-700 rounded-lg px-3 py-2 text-sm text-slate-200 focus:border-teal-500 outline-none resize-none" oninput="compilePrompt()">A camera operator in black gear walks forward filming an actor in a 1950s grey suit who walks backwards reciting lines while dodging tables</textarea>
+                        </div>
+
+                        <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                            <div>
+                                <label class="block text-xs font-semibold text-slate-400 uppercase tracking-wider mb-1">3. Entorno, Iluminación & Set</label>
+                                <input type="text" id="p-environment" value="1950s diner studio set with visible lights and warm tungsten glow" class="w-full bg-slate-900 border border-slate-700 rounded-lg px-3 py-2 text-sm text-slate-200 focus:border-teal-500 outline-none" oninput="compilePrompt()">
+                            </div>
+                            <div>
+                                <label class="block text-xs font-semibold text-slate-400 uppercase tracking-wider mb-1">4. Lente, Cuadros & Textura</label>
+                                <input type="text" id="p-lens" value="35mm lens, 24fps, film grain, hyperrealistic" class="w-full bg-slate-900 border border-slate-700 rounded-lg px-3 py-2 text-sm text-slate-200 focus:border-teal-500 outline-none" oninput="compilePrompt()">
+                            </div>
+                        </div>
+
+                        <div>
+                            <label class="block text-xs font-semibold text-red-400 uppercase tracking-wider mb-1">5. Prompt Negativo / Exclusiones Críticas</label>
+                            <input type="text" id="p-negative" value="cuts, camera transitions, morphing, face distortion, changing clothes, telephoto lens, abrupt stops" class="w-full bg-slate-900 border border-red-900/50 rounded-lg px-3 py-2 text-sm text-red-200 focus:border-red-500 outline-none" oninput="compilePrompt()">
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Live Prompt Preview & Quality Checker (5 Cols) -->
+                <div class="lg:col-span-5 flex flex-col gap-4">
+                    <!-- Positive Prompt Output -->
+                    <div class="glass-panel p-6 rounded-2xl border-slate-800 space-y-3 flex-1 flex flex-col justify-between">
+                        <div>
+                            <div class="flex items-center justify-between">
+                                <span class="text-xs font-bold uppercase tracking-wider text-teal-400 flex items-center gap-1.5">
+                                    <i data-lucide="terminal" class="w-4 h-4"></i> Prompt Compilado (Positivo)
+                                </span>
+                                <span class="text-[11px] font-mono text-slate-400" id="prompt-word-count">48 palabras</span>
+                            </div>
+                            <div class="mt-3 p-3.5 rounded-xl bg-slate-950 border border-slate-800 text-xs font-mono text-slate-300 leading-relaxed max-h-48 overflow-y-auto selection:bg-teal-600 select-all" id="compiled-prompt-text">
+                                <!-- Prompt string rendered here -->
+                            </div>
+                        </div>
+
+                        <div class="pt-3">
+                            <button onclick="copyToClipboard('compiled-prompt-text', '¡Prompt positivo copiado al portapapeles!')" class="w-full py-2.5 rounded-xl bg-gradient-to-r from-teal-600 to-cyan-600 hover:from-teal-500 hover:to-cyan-500 text-white text-sm font-semibold transition flex items-center justify-center gap-2 shadow-lg shadow-teal-900/30">
+                                <i data-lucide="copy" class="w-4 h-4"></i> Copiar Prompt para el Generador
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- Negative Prompt Output -->
+                    <div class="glass-panel p-5 rounded-2xl border-slate-800 space-y-2">
+                        <div class="flex items-center justify-between">
+                            <span class="text-xs font-bold uppercase tracking-wider text-red-400 flex items-center gap-1.5">
+                                <i data-lucide="shield-alert" class="w-4 h-4"></i> Prompt Negativo Formateado
+                            </span>
+                            <button onclick="copyToClipboard('compiled-negative-text', '¡Prompt negativo copiado!')" class="text-xs text-slate-400 hover:text-white flex items-center gap-1">
+                                <i data-lucide="copy" class="w-3 h-3"></i> Copiar
+                            </button>
+                        </div>
+                        <div class="p-2.5 rounded-lg bg-slate-950 border border-red-950/60 text-xs font-mono text-red-300 select-all" id="compiled-negative-text">
+                            cuts, camera transitions, morphing, face distortion
+                        </div>
+                    </div>
+
+                    <!-- AI Consistency Checker -->
+                    <div class="p-4 rounded-xl bg-slate-900/90 border border-slate-800 text-xs space-y-2">
+                        <div class="font-semibold text-slate-300 flex items-center gap-1.5">
+                            <i data-lucide="check-circle" class="w-4 h-4 text-emerald-400"></i>
+                            Diagnóstico de Compatibilidad de Plano Secuencia:
+                        </div>
+                        <ul class="space-y-1 text-slate-400 text-[11px]" id="prompt-diagnostics">
+                            <li class="flex items-center gap-1.5 text-emerald-400"><i data-lucide="check" class="w-3 h-3"></i> Contiene comando explícito de no corte (Single continuous take).</li>
+                            <li class="flex items-center gap-1.5 text-emerald-400"><i data-lucide="check" class="w-3 h-3"></i> Especifica longitud focal o tipo de lente (35mm).</li>
+                            <li class="flex items-center gap-1.5 text-emerald-400"><i data-lucide="check" class="w-3 h-3"></i> Prompt negativo activo para evitar morphing y transiciones.</li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- ========================================================================= -->
+        <!-- TAB 4: RÚBRICA Y CALIFICADOR INTERACTIVO -->
+        <!-- ========================================================================= -->
+        <section id="tab-rubrica" class="tab-content hidden space-y-6">
+            <div class="glass-panel p-6 rounded-2xl border-slate-800 flex flex-col md:flex-row md:items-center justify-between gap-4">
+                <div>
+                    <h2 class="text-2xl font-bold text-white flex items-center gap-2">
+                        <i data-lucide="clipboard-check" class="text-emerald-400 w-6 h-6"></i>
+                        Rúbrica de Desempeño y Calificador Docente
+                    </h2>
+                    <p class="text-sm text-slate-400 mt-1">Evalúe el trabajo de sus estudiantes con cálculo de nota ponderada y generación instantánea de informe de retroalimentación.</p>
+                </div>
+                <!-- Student Info Header -->
+                <div class="flex flex-wrap items-center gap-3">
+                    <input type="text" id="student-name" placeholder="Nombre del Estudiante..." class="bg-slate-900 text-sm text-slate-200 border border-slate-700 rounded-lg px-3 py-2 outline-none focus:border-teal-500 w-48 font-medium">
+                    <select id="evaluation-week" class="bg-slate-900 text-sm text-slate-200 border border-slate-700 rounded-lg px-3 py-2 outline-none focus:border-teal-500 font-medium">
+                        <option value="Semana 1">Entrega Sem 1 (Coreografía)</option>
+                        <option value="Semana 2">Entrega Sem 2 (Inmersión)</option>
+                        <option value="Semana 3">Entrega Sem 3 (Tensión)</option>
+                        <option value="Semana 4">Proyecto Final Sem 4 (Serie Completa)</option>
+                    </select>
+                </div>
+            </div>
+
+            <!-- Interactive Rubric Matrix -->
+            <div class="space-y-4">
+                <!-- Criterio 1 -->
+                <div class="glass-panel p-5 rounded-2xl border-slate-800 space-y-3" id="criterion-card-1">
+                    <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-2 border-b border-slate-800/80 pb-2">
+                        <div>
+                            <span class="text-xs font-bold uppercase tracking-wider text-teal-400">Criterio 1 (Ponderación 30%)</span>
+                            <h3 class="text-base font-bold text-white">Continuidad y Cero Cortes</h3>
+                            <p class="text-xs text-slate-400">Evaluación del flujo temporal ininterrumpido y ausencia de elipsis o deformaciones (*morphing*).</p>
+                        </div>
+                        <div class="text-right">
+                            <span class="text-xs text-slate-400">Puntaje:</span>
+                            <span class="text-lg font-bold text-teal-400 ml-1 font-mono" id="score-crit-1">5.0</span>
+                        </div>
+                    </div>
+
+                    <!-- Level Selector Buttons -->
+                    <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-2.5 pt-1">
+                        <button onclick="setScore(1, 5.0, this)" class="crit-btn-1 p-3 rounded-xl border text-left transition text-xs flex flex-col justify-between border-teal-500 bg-teal-950/40 text-teal-200">
+                            <div>
+                                <span class="font-bold block text-teal-300 mb-1">Excelente (4.5 - 5.0)</span>
+                                <span class="text-slate-300 text-[11px] leading-relaxed">Cámara 100% fluida, sin saltos visibles, cortes de montaje ni deformación morfológica (*warping*).</span>
+                            </div>
+                        </button>
+                        <button onclick="setScore(1, 4.0, this)" class="crit-btn-1 p-3 rounded-xl border text-left transition text-xs flex flex-col justify-between border-slate-800 bg-slate-900/60 text-slate-400 hover:border-slate-700">
+                            <div>
+                                <span class="font-bold block text-slate-200 mb-1">Competente (3.5 - 4.4)</span>
+                                <span class="text-slate-400 text-[11px] leading-relaxed">Movimiento fluido en su mayoría; micro-saltos casi imperceptibles que no rompen la inmersión.</span>
+                            </div>
+                        </button>
+                        <button onclick="setScore(1, 3.0, this)" class="crit-btn-1 p-3 rounded-xl border text-left transition text-xs flex flex-col justify-between border-slate-800 bg-slate-900/60 text-slate-400 hover:border-slate-700">
+                            <div>
+                                <span class="font-bold block text-slate-200 mb-1">En Desarrollo (2.5 - 3.4)</span>
+                                <span class="text-slate-400 text-[11px] leading-relaxed">Presenta saltos temporales evidentes o cortes disimulados que delatan falta de continuidad.</span>
+                            </div>
+                        </button>
+                        <button onclick="setScore(1, 2.0, this)" class="crit-btn-1 p-3 rounded-xl border text-left transition text-xs flex flex-col justify-between border-slate-800 bg-slate-900/60 text-slate-400 hover:border-slate-700">
+                            <div>
+                                <span class="font-bold block text-slate-200 mb-1">Requiere Mejora (1.0 - 2.4)</span>
+                                <span class="text-slate-400 text-[11px] leading-relaxed">Cortes directos evidentes o la imagen muta por completo perdiendo la lógica de plano secuencia.</span>
+                            </div>
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Criterio 2 -->
+                <div class="glass-panel p-5 rounded-2xl border-slate-800 space-y-3" id="criterion-card-2">
+                    <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-2 border-b border-slate-800/80 pb-2">
+                        <div>
+                            <span class="text-xs font-bold uppercase tracking-wider text-cyan-400">Criterio 2 (Ponderación 25%)</span>
+                            <h3 class="text-base font-bold text-white">Control Técnico del Prompt & Sintaxis</h3>
+                            <p class="text-xs text-slate-400">Uso riguroso de parámetros de lente (mm), movimiento cinematográfico y prompts negativos.</p>
+                        </div>
+                        <div class="text-right">
+                            <span class="text-xs text-slate-400">Puntaje:</span>
+                            <span class="text-lg font-bold text-cyan-400 ml-1 font-mono" id="score-crit-2">5.0</span>
+                        </div>
+                    </div>
+
+                    <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-2.5 pt-1">
+                        <button onclick="setScore(2, 5.0, this)" class="crit-btn-2 p-3 rounded-xl border text-left transition text-xs flex flex-col justify-between border-cyan-500 bg-cyan-950/40 text-cyan-200">
+                            <div>
+                                <span class="font-bold block text-cyan-300 mb-1">Excelente (4.5 - 5.0)</span>
+                                <span class="text-slate-300 text-[11px] leading-relaxed">Parámetros de lente, tipo de movimiento, luz y relación de aspecto aplicados con precisión profesional.</span>
+                            </div>
+                        </button>
+                        <button onclick="setScore(2, 4.0, this)" class="crit-btn-2 p-3 rounded-xl border text-left transition text-xs flex flex-col justify-between border-slate-800 bg-slate-900/60 text-slate-400 hover:border-slate-700">
+                            <div>
+                                <span class="font-bold block text-slate-200 mb-1">Competente (3.5 - 4.4)</span>
+                                <span class="text-slate-400 text-[11px] leading-relaxed">Parámetros de cámara correctos; leves omisiones en iluminación o estilo de lente secundario.</span>
+                            </div>
+                        </button>
+                        <button onclick="setScore(2, 3.0, this)" class="crit-btn-2 p-3 rounded-xl border text-left transition text-xs flex flex-col justify-between border-slate-800 bg-slate-900/60 text-slate-400 hover:border-slate-700">
+                            <div>
+                                <span class="font-bold block text-slate-200 mb-1">En Desarrollo (2.5 - 3.4)</span>
+                                <span class="text-slate-400 text-[11px] leading-relaxed">Describe la escena pero omite especificaciones clave de movimiento de cámara o distancia focal.</span>
+                            </div>
+                        </button>
+                        <button onclick="setScore(2, 2.0, this)" class="crit-btn-2 p-3 rounded-xl border text-left transition text-xs flex flex-col justify-between border-slate-800 bg-slate-900/60 text-slate-400 hover:border-slate-700">
+                            <div>
+                                <span class="font-bold block text-slate-200 mb-1">Requiere Mejora (1.0 - 2.4)</span>
+                                <span class="text-slate-400 text-[11px] leading-relaxed">Prompt genérico sin vocabulario técnico ni estructura requerida por el generador de video.</span>
+                            </div>
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Criterio 3 -->
+                <div class="glass-panel p-5 rounded-2xl border-slate-800 space-y-3" id="criterion-card-3">
+                    <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-2 border-b border-slate-800/80 pb-2">
+                        <div>
+                            <span class="text-xs font-bold uppercase tracking-wider text-amber-400">Criterio 3 (Ponderación 25%)</span>
+                            <h3 class="text-base font-bold text-white">Narrativa y Propósito Dramático Visual</h3>
+                            <p class="text-xs text-slate-400">Justificación del plano secuencia para generar inmersión, tensión o revelación de escala.</p>
+                        </div>
+                        <div class="text-right">
+                            <span class="text-xs text-slate-400">Puntaje:</span>
+                            <span class="text-lg font-bold text-amber-400 ml-1 font-mono" id="score-crit-3">5.0</span>
+                        </div>
+                    </div>
+
+                    <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-2.5 pt-1">
+                        <button onclick="setScore(3, 5.0, this)" class="crit-btn-3 p-3 rounded-xl border text-left transition text-xs flex flex-col justify-between border-amber-500 bg-amber-950/40 text-amber-200">
+                            <div>
+                                <span class="font-bold block text-amber-300 mb-1">Excelente (4.5 - 5.0)</span>
+                                <span class="text-slate-300 text-[11px] leading-relaxed">El movimiento transmite de forma elocuente la emoción estipulada (tensión, inmersión o asombro).</span>
+                            </div>
+                        </button>
+                        <button onclick="setScore(3, 4.0, this)" class="crit-btn-3 p-3 rounded-xl border text-left transition text-xs flex flex-col justify-between border-slate-800 bg-slate-900/60 text-slate-400 hover:border-slate-700">
+                            <div>
+                                <span class="font-bold block text-slate-200 mb-1">Competente (3.5 - 4.4)</span>
+                                <span class="text-slate-400 text-[11px] leading-relaxed">Cumple con la intención narrativa, aunque la velocidad o el ritmo resultan algo acelerados.</span>
+                            </div>
+                        </button>
+                        <button onclick="setScore(3, 3.0, this)" class="crit-btn-3 p-3 rounded-xl border text-left transition text-xs flex flex-col justify-between border-slate-800 bg-slate-900/60 text-slate-400 hover:border-slate-700">
+                            <div>
+                                <span class="font-bold block text-slate-200 mb-1">En Desarrollo (2.5 - 3.4)</span>
+                                <span class="text-slate-400 text-[11px] leading-relaxed">La intención dramática es ambigua; el movimiento no potencia el conflicto del relato visual.</span>
+                            </div>
+                        </button>
+                        <button onclick="setScore(3, 2.0, this)" class="crit-btn-3 p-3 rounded-xl border text-left transition text-xs flex flex-col justify-between border-slate-800 bg-slate-900/60 text-slate-400 hover:border-slate-700">
+                            <div>
+                                <span class="font-bold block text-slate-200 mb-1">Requiere Mejora (1.0 - 2.4)</span>
+                                <span class="text-slate-400 text-[11px] leading-relaxed">No hay intención narrativa; movimiento errático y gratuito sin aporte a la escena.</span>
+                            </div>
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Criterio 4 -->
+                <div class="glass-panel p-5 rounded-2xl border-slate-800 space-y-3" id="criterion-card-4">
+                    <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-2 border-b border-slate-800/80 pb-2">
+                        <div>
+                            <span class="text-xs font-bold uppercase tracking-wider text-purple-400">Criterio 4 (Ponderación 20%)</span>
+                            <h3 class="text-base font-bold text-white">Consistencia de Sujeto y Entorno</h3>
+                            <p class="text-xs text-slate-400">Permanencia de vestuario, proporciones físicas, paleta de color y anclas visuales.</p>
+                        </div>
+                        <div class="text-right">
+                            <span class="text-xs text-slate-400">Puntaje:</span>
+                            <span class="text-lg font-bold text-purple-400 ml-1 font-mono" id="score-crit-4">5.0</span>
+                        </div>
+                    </div>
+
+                    <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-2.5 pt-1">
+                        <button onclick="setScore(4, 5.0, this)" class="crit-btn-4 p-3 rounded-xl border text-left transition text-xs flex flex-col justify-between border-purple-500 bg-purple-950/40 text-purple-200">
+                            <div>
+                                <span class="font-bold block text-purple-300 mb-1">Excelente (4.5 - 5.0)</span>
+                                <span class="text-slate-300 text-[11px] leading-relaxed">El sujeto, colores y geometría del entorno se preservan idénticos a lo largo de toda la toma.</span>
+                            </div>
+                        </button>
+                        <button onclick="setScore(4, 4.0, this)" class="crit-btn-4 p-3 rounded-xl border text-left transition text-xs flex flex-col justify-between border-slate-800 bg-slate-900/60 text-slate-400 hover:border-slate-700">
+                            <div>
+                                <span class="font-bold block text-slate-200 mb-1">Competente (3.5 - 4.4)</span>
+                                <span class="text-slate-400 text-[11px] leading-relaxed">Consistencia general sólida con mínimas variaciones de textura en los bordes del cuadro.</span>
+                            </div>
+                        </button>
+                        <button onclick="setScore(4, 3.0, this)" class="crit-btn-4 p-3 rounded-xl border text-left transition text-xs flex flex-col justify-between border-slate-800 bg-slate-900/60 text-slate-400 hover:border-slate-700">
+                            <div>
+                                <span class="font-bold block text-slate-200 mb-1">En Desarrollo (2.5 - 3.4)</span>
+                                <span class="text-slate-400 text-[11px] leading-relaxed">El vestuario o rostro del personaje cambia visiblemente en la segunda mitad del clip.</span>
+                            </div>
+                        </button>
+                        <button onclick="setScore(4, 2.0, this)" class="crit-btn-4 p-3 rounded-xl border text-left transition text-xs flex flex-col justify-between border-slate-800 bg-slate-900/60 text-slate-400 hover:border-slate-700">
+                            <div>
+                                <span class="font-bold block text-slate-200 mb-1">Requiere Mejora (1.0 - 2.4)</span>
+                                <span class="text-slate-400 text-[11px] leading-relaxed">Mutación drástica del personaje, manos deformadas o desaparición del entorno clave.</span>
+                            </div>
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Grade Summary & Feedback Generator -->
+            <div class="grid grid-cols-1 lg:grid-cols-12 gap-6">
+                <!-- Final Grade Card (4 Cols) -->
+                <div class="lg:col-span-4 glass-panel p-6 rounded-2xl border-slate-800 flex flex-col justify-between items-center text-center space-y-4">
+                    <div>
+                        <span class="text-xs font-bold uppercase tracking-wider text-slate-400">Calificación Final Ponderada</span>
+                        <div class="mt-3 flex items-baseline justify-center gap-1">
+                            <span id="final-score-display" class="text-6xl font-black text-transparent bg-clip-text bg-gradient-to-r from-teal-400 via-cyan-300 to-emerald-400 font-mono">5.00</span>
+                            <span class="text-slate-500 font-bold text-xl">/ 5.0</span>
+                        </div>
+                        <div id="final-grade-badge" class="mt-3 inline-block px-3 py-1 rounded-full text-xs font-bold bg-emerald-950/80 border border-emerald-500/50 text-emerald-300">
+                            Desempeño Excelente (Sobresaliente)
+                        </div>
+                    </div>
+
+                    <div class="w-full text-xs text-slate-400 space-y-1 pt-2 border-t border-slate-800/80">
+                        <div class="flex justify-between"><span>C1 Continuidad (30%):</span> <strong id="sum-c1" class="text-slate-200">1.50</strong></div>
+                        <div class="flex justify-between"><span>C2 Control Técnico (25%):</span> <strong id="sum-c2" class="text-slate-200">1.25</strong></div>
+                        <div class="flex justify-between"><span>C3 Propósito Narrativo (25%):</span> <strong id="sum-c3" class="text-slate-200">1.25</strong></div>
+                        <div class="flex justify-between"><span>C4 Consistencia (20%):</span> <strong id="sum-c4" class="text-slate-200">1.00</strong></div>
+                    </div>
+                </div>
+
+                <!-- Teacher Feedback Comments (8 Cols) -->
+                <div class="lg:col-span-8 glass-panel p-6 rounded-2xl border-slate-800 flex flex-col justify-between space-y-4">
+                    <div class="space-y-2">
+                        <label class="block text-xs font-bold uppercase tracking-wider text-slate-300 flex items-center gap-2">
+                            <i data-lucide="message-square" class="w-4 h-4 text-teal-400"></i>
+                            Observaciones Pedagógicas y Retroalimentación al Estudiante
+                        </label>
+                        <textarea id="teacher-feedback" rows="4" class="w-full bg-slate-900 border border-slate-700 rounded-xl p-3 text-sm text-slate-200 focus:border-teal-500 outline-none resize-none leading-relaxed" placeholder="Escriba aquí los comentarios cualitativos, fortalezas detectadas y recomendaciones de mejora en la formulación del prompt..."></textarea>
+                    </div>
+
+                    <div class="flex flex-wrap items-center justify-between gap-3 pt-2">
+                        <button onclick="generateAutomatedFeedback()" class="text-xs font-medium text-teal-400 hover:text-teal-300 flex items-center gap-1.5">
+                            <i data-lucide="sparkles" class="w-3.5 h-3.5"></i> Autogenerar síntesis según puntajes
+                        </button>
+                        <button onclick="copyEvaluationReport()" class="px-5 py-2.5 rounded-xl bg-teal-600 hover:bg-teal-500 text-white text-xs font-bold transition flex items-center gap-2 shadow-lg shadow-teal-950">
+                            <i data-lucide="file-text" class="w-4 h-4"></i> Copiar Ficha de Evaluación Completa
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+    </main>
+
+    <footer class="border-t border-slate-900 bg-slate-950 py-6 text-center text-xs text-slate-500">
+        <div class="max-w-7xl mx-auto px-4 flex flex-col sm:flex-row items-center justify-between gap-3">
+            <span>© 2026 SecuenciaDocente • Herramienta de Apoyo para Educación Superior</span>
+            <div class="flex items-center gap-4">
+                <span class="flex items-center gap-1 text-slate-400"><i data-lucide="cpu" class="w-3.5 h-3.5 text-teal-400"></i> Motor de Render Three.js</span>
+                <span class="flex items-center gap-1 text-slate-400"><i data-lucide="film" class="w-3.5 h-3.5 text-amber-400"></i> Formato 24 FPS Cinema</span>
+            </div>
+        </div>
+    </footer>
+
+    <script>
+        // App State
+        const state = {
+            currentTab: 'analisis',
+            currentWeek: 1,
+            engine: 'runway',
+            scores: { c1: 5.0, c2: 5.0, c3: 5.0, c4: 5.0 },
+            simPlaying: false,
+            simTime: 0,
+            simDuration: 8.0,
+            simScene: 1,
+            isCameraPOV: false
+        };
+
+        // Course Weekly Content Database
+        const weeklyData = {
+            1: {
+                title: "Semana 1: La Coreografía Técnica",
+                subtitle: "Escena 1: El set de cafetería de los años 50 con operador y actor",
+                analogy: "El plano secuencia funciona como un baile de tango sincronizado: si uno tropieza, se adelanta o se detiene, hay que empezar desde el inicio.",
+                keyPoints: [
+                    "Sincronía milimétrica: La distancia entre el operador de la Steadicam y el actor que camina hacia atrás permanece invariable.",
+                    "Cero cortes con obstáculos: La cámara y los personajes esquivan mesas, focos de estudio y extras en un único flujo continuo.",
+                    "Revelación metanarrativa: Mostrar los cables y luces tras bambalinas refuerza el carácter documental de la toma."
+                ],
+                debateQuestion: "¿Qué ventajas narrativas tiene mostrar el set y los cables en lugar de ocultar la producción tras bastidores?",
+                specs: {
+                    lens: "35mm Prime",
+                    movement: "Steadicam Tracking Shot con Paneo suave",
+                    duration: "8 segundos",
+                    lighting: "Tungsteno cálido de estudio"
+                },
+                prompt: {
+                    camera: "Continuous sequence shot, smooth Steadicam tracking shot panning left",
+                    subject: "A camera operator in black gear walks forward filming an actor in a 1950s grey suit who walks backwards reciting lines while smoothly dodging diner tables and extras without stopping",
+                    environment: "1950s diner set with visible studio lights, cables on floor and warm tungsten lighting",
+                    lens: "35mm lens, 24fps, film grain, hyperrealistic, single continuous take, zero cuts",
+                    negative: "cuts, camera transitions, morphing, face distortion, changing clothes, telephoto lens, abrupt stops"
+                }
+            },
+            2: {
+                title: "Semana 2: Inmersión Espacial en Entornos Complejos",
+                subtitle: "Escena 2: Mercado callejero asiático nocturno con lluvia y neones",
+                analogy: "Es como seguir de cerca la espalda de un guía en un mercado abarrotado: el espectador siente que camina físicamente dentro del bullicio.",
+                keyPoints: [
+                    "Lente gran angular (24mm): Permite ver al sujeto en primer término y, al mismo tiempo, el vapor de los puestos y el neón reflejado en los charcos.",
+                    "Ancla visual cromática: La chaqueta amarilla brillante evita que el generador de IA confunda al personaje con la multitud.",
+                    "Fluidez ininterrumpida: La cámara sortea personas y puestos humeantes sin perder nunca el avance hacia adelante."
+                ],
+                debateQuestion: "¿Por qué un corte de edición en esta escena rompería la sensación de estar caminando dentro del mercado?",
+                specs: {
+                    lens: "24mm Gran Angular",
+                    movement: "Over-the-Shoulder Tracking continuo hacia adelante",
+                    duration: "10 segundos",
+                    lighting: "Neón cian y magenta con reflejos en suelo húmedo"
+                },
+                prompt: {
+                    camera: "Single continuous take, low-angle over-the-shoulder tracking shot following behind",
+                    subject: "A woman in a bright yellow raincoat with short black hair walks forward through a crowded wet Asian night street market, dodging vendors and steaming noodle stalls",
+                    environment: "Vibrant Asian market, wet asphalt, cyan and magenta neon light reflections on puddles, steaming food stalls",
+                    lens: "24mm wide-angle lens, cinematic cyberpunk palette, photorealistic, fluid forward motion, zero camera cuts",
+                    negative: "cuts, jump cuts, temporal lapse, face warping in background extras, flickering lights, motion blur artifacts"
+                }
+            },
+            3: {
+                title: "Semana 3: La Construcción de Tensión en Tiempo Real",
+                subtitle: "Escena 3: El pasillo lúgubre del hotel antiguo y la puerta entreabierta",
+                analogy: "Como caminar de puntillas en la oscuridad hacia una puerta con ruidos: la extrema lentitud obliga al espectador a no pestañear.",
+                keyPoints: [
+                    "Avance continuo lineal (Slow Dolly In): El avance inexorable sin cortes incrementa la sensación de peligro inminente.",
+                    "Tiempo real psicológico: Al no haber elipsis temporal, el espectador experimenta cada segundo de angustia junto a la cámara.",
+                    "Espacio como antagonista: La luz titilante y las sombras reemplazan la necesidad de mostrar un monstruo directo."
+                ],
+                debateQuestion: "¿De qué manera la iluminación parpadeante y los tonos lúgubres reemplazan la necesidad de mostrar un susto fácil (jump scare)?",
+                specs: {
+                    lens: "35mm Profundidad de campo profunda",
+                    movement: "Slow Dolly In / Push-In agónico en línea recta",
+                    duration: "10 segundos",
+                    lighting: "Sombras lúgubres, tonos rojizos y luz parpadeante"
+                },
+                prompt: {
+                    camera: "Single continuous take, agonizingly slow Dolly In slow push-in straight forward",
+                    subject: "Camera creeps down an ominous hallway toward a cracked open door at the end where a flickering light reveals a moving shadow",
+                    environment: "Dark vintage hotel hallway, worn retro wallpaper, deep red carpet, heavy shadows, atmospheric dust particles",
+                    lens: "35mm lens, deep depth of field, suspense thriller look, heavy grain, uninterrupted motion, no cuts",
+                    negative: "speed ramps, fast forward, daylight, wall morphing, room warping, jump cuts, shaky camera, transitions"
+                }
+            },
+            4: {
+                title: "Semana 4: Escala, Espacio y Revelación Contextual",
+                subtitle: "Escena 4: El músico en el acantilado con grúa ascendente",
+                analogy: "Como alejarse en un mapa satelital interactivo: pasamos de ver la madera de una guitarra a la inmensidad del océano en un solo vuelo.",
+                keyPoints: [
+                    "Transición de escala sin corte: Transición fluida desde un Primer Plano (manos y cuerdas) hasta un Gran Plano General.",
+                    "Impacto emocional de la revelación: La música íntima adquiere una resonancia épica cuando se descubre el abismo y el mar.",
+                    "Prueba de consistencia para la IA: El sujeto no debe encogerse deformado ni multiplicarse al ascender la cámara."
+                ],
+                debateQuestion: "¿Qué comunica sobre la condición humana empezar en la intimidad de un rostro y terminar con el personaje empequeñecido frente al mar?",
+                specs: {
+                    lens: "28-70mm Cinema Zoom / Grúa",
+                    movement: "Crane Shot Pull Back & Up (Ascenso y retroceso vertical)",
+                    duration: "10 segundos",
+                    lighting: "Hora dorada (Golden hour) con bruma marina matutina"
+                },
+                prompt: {
+                    camera: "Single continuous take, seamless Crane Shot pulling backwards and elevating upwards",
+                    subject: "Starts as a Close-Up on hands and face of an elderly musician playing acoustic guitar, smoothly ascends revealing him sitting on a massive cliff edge overlooking ocean mist",
+                    environment: "Rural coastal landscape at sunrise, golden hour light, morning fog, vast ocean cliffs",
+                    lens: "Cinematic composition, 24fps, golden sunlight highlights, epic scale reveal, zero cuts",
+                    negative: "cuts, cross-fades, abrupt zoom, cliff deformation, disappearing guitar, perspective shift glitch"
+                }
+            }
+        };
+
+        function switchTab(tabId) {
+            state.currentTab = tabId;
+            document.querySelectorAll('.tab-content').forEach(el => el.classList.add('hidden'));
+            document.querySelectorAll('.tab-btn').forEach(btn => {
+                btn.className = 'tab-btn px-3 py-2 rounded-lg text-sm font-medium transition-all flex items-center gap-2 text-slate-400 hover:text-slate-200 hover:bg-slate-800/60';
+            });
+
+            const activeTab = document.getElementById(`tab-${tabId}`);
+            const activeBtn = document.getElementById(`tab-btn-${tabId}`);
+            if (activeTab) activeTab.classList.remove('hidden');
+            if (activeBtn) {
+                activeBtn.className = 'tab-btn px-3 py-2 rounded-lg text-sm font-medium transition-all flex items-center gap-2 bg-teal-600/20 text-teal-300 border border-teal-500/40';
+            }
+
+            if (tabId === 'simulador') {
+                setTimeout(() => {
+                    handleResize();
+                }, 50);
+            }
+            lucide.createIcons();
+        }
+
+        function setAnalysisWeek(weekNum) {
+            state.currentWeek = weekNum;
+            const data = weeklyData[weekNum];
+
+            // Update pills
+            document.querySelectorAll('.week-pill').forEach((btn, idx) => {
+                if (idx + 1 === weekNum) {
+                    btn.className = 'week-pill px-3 py-1.5 rounded-md text-xs font-semibold bg-teal-600 text-white transition';
+                } else {
+                    btn.className = 'week-pill px-3 py-1.5 rounded-md text-xs font-semibold text-slate-400 hover:text-white transition';
+                }
+            });
+
+            const card = document.getElementById('week-content-card');
+            card.innerHTML = `
+                <div class="flex flex-col lg:flex-row lg:items-start justify-between gap-6 border-b border-slate-800 pb-6">
+                    <div>
+                        <div class="flex items-center gap-2">
+                            <span class="px-2.5 py-0.5 rounded-full text-[11px] font-bold bg-teal-950 border border-teal-800 text-teal-300 uppercase">Módulo Semana ${weekNum}</span>
+                            <span class="text-xs text-slate-400">• ${data.specs.duration} de toma continua</span>
+                        </div>
+                        <h3 class="text-2xl font-black text-white mt-2">${data.title}</h3>
+                        <p class="text-sm text-teal-300 font-medium mt-0.5">${data.subtitle}</p>
+                    </div>
+                    <div class="grid grid-cols-2 sm:grid-cols-4 gap-3 text-xs bg-slate-950/60 p-3.5 rounded-xl border border-slate-800">
+                        <div><span class="text-slate-500 block">Lente:</span><strong class="text-slate-200">${data.specs.lens}</strong></div>
+                        <div><span class="text-slate-500 block">Movimiento:</span><strong class="text-slate-200">${data.specs.movement}</strong></div>
+                        <div><span class="text-slate-500 block">Duración:</span><strong class="text-slate-200">${data.specs.duration}</strong></div>
+                        <div><span class="text-slate-500 block">Iluminación:</span><strong class="text-slate-200">${data.specs.lighting}</strong></div>
+                    </div>
+                </div>
+
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <!-- Analogía y Concepto Simple -->
+                    <div class="space-y-4">
+                        <div class="p-4 rounded-xl bg-slate-900/80 border border-slate-800">
+                            <h4 class="text-xs font-bold uppercase tracking-wider text-teal-400 flex items-center gap-1.5">
+                                <i data-lucide="sparkles" class="w-4 h-4"></i> Explicación en Palabras Simples (Analogía)
+                            </h4>
+                            <p class="text-sm text-slate-200 mt-2 italic leading-relaxed">
+                                "${data.analogy}"
+                            </p>
+                        </div>
+
+                        <div class="p-4 rounded-xl bg-slate-900/80 border border-slate-800">
+                            <h4 class="text-xs font-bold uppercase tracking-wider text-cyan-400 flex items-center gap-1.5">
+                                <i data-lucide="eye" class="w-4 h-4"></i> Qué Observar en Clase
+                            </h4>
+                            <ul class="mt-2.5 space-y-2 text-xs text-slate-300">
+                                ${data.keyPoints.map(pt => `<li class="flex items-start gap-2"><i data-lucide="check" class="w-4 h-4 text-cyan-400 shrink-0 mt-0.5"></i><span>${pt}</span></li>`).join('')}
+                            </ul>
+                        </div>
+                    </div>
+
+                    <!-- Pregunta Detonante & Acciones Rápidas -->
+                    <div class="space-y-4 flex flex-col justify-between">
+                        <div class="p-4 rounded-xl bg-amber-950/20 border border-amber-800/40">
+                            <h4 class="text-xs font-bold uppercase tracking-wider text-amber-400 flex items-center gap-1.5">
+                                <i data-lucide="help-circle" class="w-4 h-4"></i> Pregunta Detonante para Debate Universitario
+                            </h4>
+                            <p class="text-sm text-amber-100 font-medium mt-2 leading-relaxed">
+                                "${data.debateQuestion}"
+                            </p>
+                            <p class="text-[11px] text-amber-300/80 mt-2">
+                                Sugerencia: Solicite a dos estudiantes defender la postura técnica y a otros dos la postura estética narrativa.
+                            </p>
+                        </div>
+
+                        <div class="p-4 rounded-xl bg-slate-950 border border-slate-800 flex flex-wrap gap-2 justify-between items-center">
+                            <span class="text-xs text-slate-400">¿Desea probar este plano en los motores?</span>
+                            <div class="flex gap-2">
+                                <button onclick="loadWeekIntoSim(${weekNum})" class="px-3 py-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-200 text-xs font-medium transition flex items-center gap-1">
+                                    <i data-lucide="box" class="w-3.5 h-3.5 text-cyan-400"></i> Ver en 3D
+                                </button>
+                                <button onclick="loadWeekIntoPromptStudio(${weekNum})" class="px-3 py-1.5 rounded-lg bg-teal-600 hover:bg-teal-500 text-white text-xs font-medium transition flex items-center gap-1">
+                                    <i data-lucide="wand-2" class="w-3.5 h-3.5"></i> Abrir en Prompt Studio
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            `;
+            lucide.createIcons();
+        }
+
+        let scene, camera, renderer, animationFrameId;
+        let actorMesh, camHelperMesh, targetPathLine;
+        let sceneElements = [];
+
+        function init3D() {
+            const container = document.getElementById('canvas-container');
+            if (!container) return;
+
+            scene = new THREE.Scene();
+            scene.background = new THREE.Color(0x090d16);
+            scene.fog = new THREE.FogExp2(0x090d16, 0.03);
+
+            camera = new THREE.PerspectiveCamera(50, container.clientWidth / container.clientHeight, 0.1, 100);
+            camera.position.set(0, 10, 18);
+            camera.lookAt(0, 1, 0);
+
+            renderer = new THREE.WebGLRenderer({ antialias: true });
+            renderer.setSize(container.clientWidth, container.clientHeight);
+            renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+            renderer.shadowMap.enabled = true;
+            container.appendChild(renderer.domElement);
+
+            // Studio Grid Floor
+            const gridHelper = new THREE.GridHelper(40, 40, 0x14b8a6, 0x1e293b);
+            gridHelper.position.y = 0;
+            scene.add(gridHelper);
+
+            // Ambient & Directional Lights
+            const ambientLight = new THREE.AmbientLight(0xffffff, 0.7);
+            scene.add(ambientLight);
+
+            const dirLight = new THREE.DirectionalLight(0xffffff, 1.2);
+            dirLight.position.set(10, 20, 10);
+            scene.add(dirLight);
+
+            buildSceneGeometry(1);
+            animate3D();
+        }
+
+        function handleResize() {
+            const container = document.getElementById('canvas-container');
+            if (!container || !renderer || !camera) return;
+            camera.aspect = container.clientWidth / container.clientHeight;
+            camera.updateProjectionMatrix();
+            renderer.setSize(container.clientWidth, container.clientHeight);
+        }
+        window.addEventListener('resize', handleResize);
+
+        function clearSceneElements() {
+            sceneElements.forEach(obj => scene.remove(obj));
+            sceneElements = [];
+        }
+
+        function buildSceneGeometry(sceneId) {
+            clearSceneElements();
+            state.simScene = parseInt(sceneId);
+
+            // Inspector Details Text
+            const inspector = document.getElementById('sim-inspector-details');
+            const tip = document.getElementById('sim-pedagogical-tip');
+
+            if (sceneId == 1) {
+                // Scene 1: 1950s Diner with Camera Operator & Actor
+                state.simDuration = 8.0;
+                document.getElementById('sim-duration-display').innerText = "8.0s";
+
+                // Tables
+                for (let i = -3; i <= 3; i += 2) {
+                    const tableGeo = new THREE.CylinderGeometry(0.8, 0.8, 0.8, 16);
+                    const tableMat = new THREE.MeshStandardMaterial({ color: 0xb45309, roughness: 0.4 });
+                    const table = new THREE.Mesh(tableGeo, tableMat);
+                    table.position.set(i * 2.2, 0.4, (i % 2) * 2 - 2);
+                    scene.add(table);
+                    sceneElements.push(table);
+                }
+
+                // Actor (Grey Suit)
+                const actorGeo = new THREE.CapsuleGeometry ? new THREE.CapsuleGeometry(0.4, 1.2, 4, 8) : new THREE.CylinderGeometry(0.4, 0.4, 1.6);
+                const actorMat = new THREE.MeshStandardMaterial({ color: 0x94a3b8, roughness: 0.3 });
+                actorMesh = new THREE.Mesh(actorGeo, actorMat);
+                actorMesh.position.set(0, 0.9, -4);
+                scene.add(actorMesh);
+                sceneElements.push(actorMesh);
+
+                // Operator with Steadicam (Black)
+                const opMat = new THREE.MeshStandardMaterial({ color: 0x0f172a });
+                camHelperMesh = new THREE.Mesh(actorGeo, opMat);
+                camHelperMesh.position.set(0, 0.9, 0);
+                scene.add(camHelperMesh);
+                sceneElements.push(camHelperMesh);
+
+                inspector.innerHTML = `
+                    <div class="flex justify-between border-b border-slate-800 pb-1.5"><span class="text-slate-400">Tipo de Rig:</span> <span class="text-teal-300 font-semibold">Steadicam Arm</span></div>
+                    <div class="flex justify-between border-b border-slate-800 pb-1.5"><span class="text-slate-400">Distancia Relativa:</span> <span class="text-teal-300 font-semibold">3.8 metros constante</span></div>
+                    <div class="flex justify-between border-b border-slate-800 pb-1.5"><span class="text-slate-400">Trayectoria:</span> <span class="text-teal-300 font-semibold">Eje Z invertido + Paneo</span></div>
+                `;
+                tip.innerText = "La cámara avanza en línea sincronizada mientras el actor retrocede. La consistencia de la distancia focal previene deformaciones en la IA.";
+            } 
+            else if (sceneId == 2) {
+                // Scene 2: Night Neon Market
+                state.simDuration = 10.0;
+                document.getElementById('sim-duration-display').innerText = "10.0s";
+
+                // Market Stalls with neon tops
+                for (let z = -12; z <= 12; z += 4) {
+                    const stallGeo = new THREE.BoxGeometry(1.5, 2, 2.5);
+                    const stallMat = new THREE.MeshStandardMaterial({ color: (z % 8 === 0) ? 0x06b6d4 : 0xec4899, emissive: (z % 8 === 0) ? 0x083344 : 0x500724 });
+                    const leftStall = new THREE.Mesh(stallGeo, stallMat);
+                    leftStall.position.set(-3.5, 1, z);
+                    const rightStall = new THREE.Mesh(stallGeo, stallMat);
+                    rightStall.position.set(3.5, 1, z);
+                    scene.add(leftStall);
+                    scene.add(rightStall);
+                    sceneElements.push(leftStall, rightStall);
+                }
+
+                // Yellow Raincoat Character
+                const charGeo = new THREE.CylinderGeometry(0.35, 0.45, 1.6);
+                const charMat = new THREE.MeshStandardMaterial({ color: 0xfacc15, roughness: 0.1 });
+                actorMesh = new THREE.Mesh(charGeo, charMat);
+                actorMesh.position.set(0, 0.8, -10);
+                scene.add(actorMesh);
+                sceneElements.push(actorMesh);
+
+                inspector.innerHTML = `
+                    <div class="flex justify-between border-b border-slate-800 pb-1.5"><span class="text-slate-400">Lente Simulado:</span> <span class="text-cyan-300 font-semibold">24mm Gran Angular</span></div>
+                    <div class="flex justify-between border-b border-slate-800 pb-1.5"><span class="text-slate-400">Posición de Cámara:</span> <span class="text-cyan-300 font-semibold">Over the shoulder (Trasera)</span></div>
+                    <div class="flex justify-between border-b border-slate-800 pb-1.5"><span class="text-slate-400">Ancla Visual:</span> <span class="text-amber-300 font-semibold">Chaqueta Amarilla (#facc15)</span></div>
+                `;
+                tip.innerText = "Al avanzar en el espacio estrecho, el gran angular maximiza la velocidad perceptual del entorno sin perder de vista la espalda del sujeto.";
+            } 
+            else if (sceneId == 3) {
+                // Scene 3: Hallway Dolly In
+                state.simDuration = 10.0;
+                document.getElementById('sim-duration-display').innerText = "10.0s";
+
+                // Long Hallway Walls
+                const wallGeo = new THREE.BoxGeometry(0.5, 3.5, 26);
+                const wallMat = new THREE.MeshStandardMaterial({ color: 0x331010, roughness: 0.8 });
+                const leftWall = new THREE.Mesh(wallGeo, wallMat);
+                leftWall.position.set(-2.5, 1.75, 0);
+                const rightWall = new THREE.Mesh(wallGeo, wallMat);
+                rightWall.position.set(2.5, 1.75, 0);
+                scene.add(leftWall, rightWall);
+                sceneElements.push(leftWall, rightWall);
+
+                // Door with flickering light at end
+                const doorGeo = new THREE.BoxGeometry(2, 3, 0.2);
+                const doorMat = new THREE.MeshStandardMaterial({ color: 0x7f1d1d });
+                const door = new THREE.Mesh(doorGeo, doorMat);
+                door.position.set(0, 1.5, -12.5);
+                scene.add(door);
+                sceneElements.push(door);
+
+                inspector.innerHTML = `
+                    <div class="flex justify-between border-b border-slate-800 pb-1.5"><span class="text-slate-400">Cinemática:</span> <span class="text-amber-300 font-semibold">Slow Dolly In (0.6 m/s)</span></div>
+                    <div class="flex justify-between border-b border-slate-800 pb-1.5"><span class="text-slate-400">Composición:</span> <span class="text-amber-300 font-semibold">Punto de fuga central</span></div>
+                    <div class="flex justify-between border-b border-slate-800 pb-1.5"><span class="text-slate-400">Propósito:</span> <span class="text-amber-300 font-semibold">Suspenso en Tiempo Real</span></div>
+                `;
+                tip.innerText = "La velocidad lineal constante y la simetría del pasillo fuerzan al espectador a concentrarse en la puerta sin parpadeos.";
+            } 
+            else if (sceneId == 4) {
+                // Scene 4: Crane Shot & Cliff
+                state.simDuration = 10.0;
+                document.getElementById('sim-duration-display').innerText = "10.0s";
+
+                // Cliff Ground
+                const cliffGeo = new THREE.BoxGeometry(8, 2, 8);
+                const cliffMat = new THREE.MeshStandardMaterial({ color: 0x3f3f46 });
+                const cliff = new THREE.Mesh(cliffGeo, cliffMat);
+                cliff.position.set(0, 0, -2);
+                scene.add(cliff);
+                sceneElements.push(cliff);
+
+                // Musician seated
+                const musGeo = new THREE.BoxGeometry(0.5, 0.8, 0.5);
+                const musMat = new THREE.MeshStandardMaterial({ color: 0xd97706 });
+                actorMesh = new THREE.Mesh(musGeo, musMat);
+                actorMesh.position.set(0, 1.4, -4);
+                scene.add(actorMesh);
+                sceneElements.push(actorMesh);
+
+                inspector.innerHTML = `
+                    <div class="flex justify-between border-b border-slate-800 pb-1.5"><span class="text-slate-400">Tipo de Mecanismo:</span> <span class="text-purple-300 font-semibold">Grúa Telescópica / Dron</span></div>
+                    <div class="flex justify-between border-b border-slate-800 pb-1.5"><span class="text-slate-400">Transición de Escala:</span> <span class="text-purple-300 font-semibold">Close-Up → Extreme Wide</span></div>
+                    <div class="flex justify-between border-b border-slate-800 pb-1.5"><span class="text-slate-400">Elevación Vertical:</span> <span class="text-purple-300 font-semibold">De +1.5m a +12m</span></div>
+                `;
+                tip.innerText = "El movimiento compuesto (retroceso + elevación continua) contextualiza al personaje pasando de lo íntimo a lo cósmico.";
+            }
+        }
+
+        function changeSimScene(sceneId) {
+            state.simTime = 0;
+            state.simPlaying = false;
+            updatePlayButtonUI();
+            buildSceneGeometry(sceneId);
+        }
+
+        function toggleSimPlay() {
+            state.simPlaying = !state.simPlaying;
+            updatePlayButtonUI();
+        }
+
+        function updatePlayButtonUI() {
+            const icon = document.getElementById('sim-play-icon');
+            if (state.simPlaying) {
+                icon.setAttribute('data-lucide', 'pause');
+            } else {
+                icon.setAttribute('data-lucide', 'play');
+            }
+            lucide.createIcons();
+        }
+
+        function resetSim() {
+            state.simTime = 0;
+            state.simPlaying = false;
+            updatePlayButtonUI();
+            updateSimPositions(0);
+        }
+
+        function scrubSim(valPercent) {
+            state.simTime = (valPercent / 100) * state.simDuration;
+            updateSimPositions(state.simTime);
+        }
+
+        function toggleCameraPerspective() {
+            state.isCameraPOV = !state.isCameraPOV;
+            const btnText = document.getElementById('cam-mode-text');
+            if (state.isCameraPOV) {
+                btnText.innerText = "Vista Orbital General";
+            } else {
+                btnText.innerText = "Cambiar a POV Cámara";
+            }
+        }
+
+        function updateSimPositions(t) {
+            const progress = Math.min(t / state.simDuration, 1);
+            document.getElementById('sim-progress').value = progress * 100;
+            document.getElementById('sim-time-display').innerText = t.toFixed(1) + 's';
+
+            if (state.simScene === 1) {
+                // Scene 1: Actor backwards, Camera forwards
+                const zPos = -4 + progress * 8;
+                if (actorMesh) actorMesh.position.set(Math.sin(progress * Math.PI) * 1.2, 0.9, zPos);
+                if (camHelperMesh) camHelperMesh.position.set(Math.sin(progress * Math.PI) * 1.2, 0.9, zPos + 3.8);
+
+                if (state.isCameraPOV) {
+                    camera.position.set(Math.sin(progress * Math.PI) * 1.2, 1.6, zPos + 3.8);
+                    camera.lookAt(actorMesh.position.x, 1.2, actorMesh.position.z);
+                } else {
+                    camera.position.set(10, 10, 10);
+                    camera.lookAt(0, 1, zPos);
+                }
+            } 
+            else if (state.simScene === 2) {
+                // Scene 2: Tracking Market
+                const zPos = -10 + progress * 20;
+                if (actorMesh) actorMesh.position.set(Math.sin(progress * 4) * 0.8, 0.8, zPos);
+
+                if (state.isCameraPOV) {
+                    camera.position.set(actorMesh.position.x * 0.5, 1.5, zPos - 2.5);
+                    camera.lookAt(actorMesh.position.x, 1.2, zPos + 4);
+                } else {
+                    camera.position.set(8, 12, zPos - 2);
+                    camera.lookAt(0, 1, zPos);
+                }
+            } 
+            else if (state.simScene === 3) {
+                // Scene 3: Dolly In Hallway
+                const zPos = 8 - progress * 16;
+                if (state.isCameraPOV) {
+                    camera.position.set(0, 1.5, zPos);
+                    camera.lookAt(0, 1.5, -13);
+                } else {
+                    camera.position.set(8, 8, zPos + 2);
+                    camera.lookAt(0, 1.5, -6);
+                }
+            } 
+            else if (state.simScene === 4) {
+                // Scene 4: Crane Shot pull back & up
+                const elevation = 1.6 + progress * 10;
+                const distance = -2 + progress * 14;
+
+                if (state.isCameraPOV) {
+                    camera.position.set(0, elevation, distance);
+                    camera.lookAt(0, 1.4, -4);
+                } else {
+                    camera.position.set(12, 12, 12);
+                    camera.lookAt(0, 2, -2);
+                }
+            }
+        }
+
+        function animate3D() {
+            animationFrameId = requestAnimationFrame(animate3D);
+
+            if (state.simPlaying) {
+                state.simTime += 0.016; // approx 60fps delta
+                if (state.simTime > state.simDuration) {
+                    state.simTime = state.simDuration;
+                    state.simPlaying = false;
+                    updatePlayButtonUI();
+                }
+                updateSimPositions(state.simTime);
+            }
+
+            if (renderer && scene && camera) {
+                renderer.render(scene, camera);
+            }
+        }
+
+        function compilePrompt() {
+            const cam = document.getElementById('p-camera').value.trim();
+            const subj = document.getElementById('p-subject').value.trim();
+            const env = document.getElementById('p-environment').value.trim();
+            const lens = document.getElementById('p-lens').value.trim();
+            const neg = document.getElementById('p-negative').value.trim();
+            const engine = document.getElementById('engine-select').value;
+
+            let enginePrefix = "";
+            let engineSuffix = "";
+
+            if (engine === 'runway') {
+                enginePrefix = "[Runway Gen-3] ";
+                engineSuffix = " --motion 5 --camera-control true --no cuts";
+            } else if (engine === 'kling') {
+                enginePrefix = "[Kling AI 1.5] ";
+                engineSuffix = " --strict-continuity --cfg 0.6";
+            } else if (engine === 'luma') {
+                enginePrefix = "[Luma Dream Machine] ";
+                engineSuffix = " --camera-motion smooth";
+            }
+
+            const fullPrompt = `${enginePrefix}${cam}. ${subj}. ${env}. ${lens}.${engineSuffix}`;
+            document.getElementById('compiled-prompt-text').innerText = fullPrompt;
+            document.getElementById('compiled-negative-text').innerText = neg;
+            document.getElementById('prompt-word-count').innerText = fullPrompt.split(/\s+/).length + ' palabras';
+
+            // Diagnostic checks
+            const diagList = document.getElementById('prompt-diagnostics');
+            let checks = [];
+
+            if (/continuous|sequence|single take|no cuts/i.test(fullPrompt)) {
+                checks.push(`<li class="flex items-center gap-1.5 text-emerald-400"><i data-lucide="check" class="w-3 h-3"></i> Contiene instrucción explícita de continuidad (No Cuts).</li>`);
+            } else {
+                checks.push(`<li class="flex items-center gap-1.5 text-amber-400"><i data-lucide="alert-triangle" class="w-3 h-3"></i> Recomendado añadir "Single continuous take, zero cuts".</li>`);
+            }
+
+            if (/mm|lens|wide-angle|close-up|telephoto/i.test(fullPrompt)) {
+                checks.push(`<li class="flex items-center gap-1.5 text-emerald-400"><i data-lucide="check" class="w-3 h-3"></i> Parámetro de óptica y lente especificado.</li>`);
+            } else {
+                checks.push(`<li class="flex items-center gap-1.5 text-red-400"><i data-lucide="x" class="w-3 h-3"></i> Falta especificar la distancia focal (ej. 24mm, 35mm).</li>`);
+            }
+
+            if (neg.length > 5) {
+                checks.push(`<li class="flex items-center gap-1.5 text-emerald-400"><i data-lucide="check" class="w-3 h-3"></i> Prompt negativo activo para bloquear saltos y morphing.</li>`);
+            } else {
+                checks.push(`<li class="flex items-center gap-1.5 text-red-400"><i data-lucide="x" class="w-3 h-3"></i> Se aconseja incluir exclusiones negativas (cuts, jump cuts).</li>`);
+            }
+
+            diagList.innerHTML = checks.join('');
+            lucide.createIcons();
+        }
+
+        function updateEnginePreset() {
+            compilePrompt();
+        }
+
+        function loadSceneTemplate() {
+            loadWeekIntoPromptStudio(state.currentWeek);
+        }
+
+        function loadWeekIntoPromptStudio(weekNum) {
+            switchTab('prompts');
+            const data = weeklyData[weekNum];
+            document.getElementById('p-camera').value = data.prompt.camera;
+            document.getElementById('p-subject').value = data.prompt.subject;
+            document.getElementById('p-environment').value = data.prompt.environment;
+            document.getElementById('p-lens').value = data.prompt.lens;
+            document.getElementById('p-negative').value = data.prompt.negative;
+            compilePrompt();
+            showToast(`Plantilla de la Semana ${weekNum} cargada en Prompt Studio`);
+        }
+
+        function loadWeekIntoSim(weekNum) {
+            switchTab('simulador');
+            document.getElementById('sim-scene-select').value = weekNum;
+            changeSimScene(weekNum);
+            showToast(`Cargada simulación 3D de la Semana ${weekNum}`);
+        }
+
+        function setScore(criterionNum, scoreVal, buttonEl) {
+            state.scores[`c${criterionNum}`] = parseFloat(scoreVal);
+            document.getElementById(`score-crit-${criterionNum}`).innerText = scoreVal.toFixed(1);
+
+            // Highlight selected button
+            const buttons = document.querySelectorAll(`.crit-btn-${criterionNum}`);
+            buttons.forEach(btn => {
+                btn.className = `crit-btn-${criterionNum} p-3 rounded-xl border text-left transition text-xs flex flex-col justify-between border-slate-800 bg-slate-900/60 text-slate-400 hover:border-slate-700`;
+            });
+
+            const colorClass = criterionNum === 1 ? 'border-teal-500 bg-teal-950/40 text-teal-200' :
+                               criterionNum === 2 ? 'border-cyan-500 bg-cyan-950/40 text-cyan-200' :
+                               criterionNum === 3 ? 'border-amber-500 bg-amber-950/40 text-amber-200' :
+                               'border-purple-500 bg-purple-950/40 text-purple-200';
+
+            buttonEl.className = `crit-btn-${criterionNum} p-3 rounded-xl border text-left transition text-xs flex flex-col justify-between ${colorClass}`;
+
+            calculateFinalGrade();
+        }
+
+        function calculateFinalGrade() {
+            const w1 = 0.30;
+            const w2 = 0.25;
+            const w3 = 0.25;
+            const w4 = 0.20;
+
+            const c1Score = state.scores.c1 * w1;
+            const c2Score = state.scores.c2 * w2;
+            const c3Score = state.scores.c3 * w3;
+            const c4Score = state.scores.c4 * w4;
+
+            const total = c1Score + c2Score + c3Score + c4Score;
+
+            document.getElementById('sum-c1').innerText = c1Score.toFixed(2);
+            document.getElementById('sum-c2').innerText = c2Score.toFixed(2);
+            document.getElementById('sum-c3').innerText = c3Score.toFixed(2);
+            document.getElementById('sum-c4').innerText = c4Score.toFixed(2);
+
+            const totalEl = document.getElementById('final-score-display');
+            totalEl.innerText = total.toFixed(2);
+
+            const badge = document.getElementById('final-grade-badge');
+            if (total >= 4.5) {
+                badge.innerText = "Desempeño Excelente (Sobresaliente)";
+                badge.className = "mt-3 inline-block px-3 py-1 rounded-full text-xs font-bold bg-emerald-950/80 border border-emerald-500/50 text-emerald-300";
+            } else if (total >= 3.5) {
+                badge.innerText = "Desempeño Competente (Aprobado)";
+                badge.className = "mt-3 inline-block px-3 py-1 rounded-full text-xs font-bold bg-cyan-950/80 border border-cyan-500/50 text-cyan-300";
+            } else if (total >= 2.5) {
+                badge.innerText = "En Desarrollo (Requiere Ajustes)";
+                badge.className = "mt-3 inline-block px-3 py-1 rounded-full text-xs font-bold bg-amber-950/80 border border-amber-500/50 text-amber-300";
+            } else {
+                badge.innerText = "Requiere Mejora Significativa";
+                badge.className = "mt-3 inline-block px-3 py-1 rounded-full text-xs font-bold bg-red-950/80 border border-red-500/50 text-red-300";
+            }
+        }
+
+        function generateAutomatedFeedback() {
+            const student = document.getElementById('student-name').value.trim() || 'Estudiante';
+            const week = document.getElementById('evaluation-week').value;
+            const total = document.getElementById('final-score-display').innerText;
+
+            let feedback = `Estimado/a ${student}, tras revisar la entrega correspondiente a ${week}:\n\n`;
+
+            if (state.scores.c1 >= 4.5) {
+                feedback += `• Continuidad: Excelente dominio del plano secuencia. El movimiento de cámara es continuo sin cortes disimulados ni deformaciones (*morphing*).\n`;
+            } else {
+                feedback += `• Continuidad: Se detectan micro-saltos o saltos de eje. Se recomienda reforzar el prompt negativo (cuts, transitions) para consolidar una única toma.\n`;
+            }
+
+            if (state.scores.c2 >= 4.5) {
+                feedback += `• Control Técnico: Gran precisión en el uso de lentes cinematográficos y comandos de movimiento adaptados al motor de IA.\n`;
+            } else {
+                feedback += `• Control Técnico: Sugerimos especificar con mayor claridad la distancia focal (ej. 24mm o 35mm) y el tipo de rig (Steadicam, Dolly, Crane).\n`;
+            }
+
+            if (state.scores.c3 >= 4.5) {
+                feedback += `• Narrativa: La intención dramática es clara y potencia la inmersión y emoción del espectador.\n`;
+            }
+
+            feedback += `\nCalificación Obtenida: ${total} / 5.0. ¡Buen trabajo en la aplicación de las técnicas cinematográficas con IA!`;
+
+            document.getElementById('teacher-feedback').value = feedback;
+            showToast("Retroalimentación automática generada con éxito");
+        }
+
+        function copyToClipboard(elementId, successMsg) {
+            const text = document.getElementById(elementId).innerText;
+            const tempInput = document.createElement('textarea');
+            tempInput.value = text;
+            document.body.appendChild(tempInput);
+            tempInput.select();
+            try {
+                document.execCommand('copy');
+                showToast(successMsg);
+            } catch (err) {
+                console.error('Error al copiar', err);
+            }
+            document.body.removeChild(tempInput);
+        }
+
+        function copyEvaluationReport() {
+            const student = document.getElementById('student-name').value.trim() || 'Sin Nombre';
+            const week = document.getElementById('evaluation-week').value;
+            const score = document.getElementById('final-score-display').innerText;
+            const feedback = document.getElementById('teacher-feedback').value;
+
+            const report = `========================================================\n` +
+                           `FICHA DE EVALUACIÓN DOCENTE: PLANO SECUENCIA & IA\n` +
+                           `========================================================\n` +
+                           `Estudiante: ${student}\n` +
+                           `Módulo Evaluado: ${week}\n` +
+                           `Calificación Final: ${score} / 5.0\n` +
+                           `--------------------------------------------------------\n` +
+                           `Puntajes por Criterio:\n` +
+                           `- Continuidad y Cero Cortes (30%): ${state.scores.c1.toFixed(1)} / 5.0\n` +
+                           `- Control Técnico del Prompt (25%): ${state.scores.c2.toFixed(1)} / 5.0\n` +
+                           `- Propósito Narrativo Visual (25%): ${state.scores.c3.toFixed(1)} / 5.0\n` +
+                           `- Consistencia de Sujeto y Entorno (20%): ${state.scores.c4.toFixed(1)} / 5.0\n` +
+                           `--------------------------------------------------------\n` +
+                           `Observaciones Pedagógicas:\n${feedback}\n` +
+                           `========================================================`;
+
+            const tempInput = document.createElement('textarea');
+            tempInput.value = report;
+            document.body.appendChild(tempInput);
+            tempInput.select();
+            document.execCommand('copy');
+            document.body.removeChild(tempInput);
+
+            showToast("¡Ficha de evaluación completa copiada al portapapeles!");
+        }
+
+        function showToast(msg) {
+            const toast = document.getElementById('toast');
+            const msgEl = document.getElementById('toast-message');
+            msgEl.innerText = msg;
+            toast.classList.remove('translate-y-20', 'opacity-0', 'pointer-events-none');
+            setTimeout(() => {
+                toast.classList.add('translate-y-20', 'opacity-0', 'pointer-events-none');
+            }, 3000);
+        }
+
+        // Initialization on Load
+        window.onload = function () {
+            setAnalysisWeek(1);
+            compilePrompt();
+            calculateFinalGrade();
+            init3D();
+            lucide.createIcons();
+        };
+    </script>
+</body>
+</html>
